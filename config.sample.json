@@ -1,8 +1,8 @@
 {
     "cookie": [
         {
-            "XSRF-TOKEN": "",
-            "_session": ""
+            "X-CSRF-TOKEN": "",
+            "COOKIE":""
         }
     ],
     "shareCode": {
