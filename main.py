@@ -417,15 +417,15 @@ class getCCB():
     def main(self):
         try:
             # 主会场活动
-            # self.doTask()
+            self.doTask()
             # 车主分会场活动
-            # self.doCarTask()
+            self.doCarTask()
             # 天天抽奖活动
-            # self.draw()
+            self.draw()
             # 每日一答
-            # self.dayAnswer()
+            self.dayAnswer()
             # 母亲节晒妈活动
-            # self.mothersDayTask()
+            self.mothersDayTask()
             # 龙支付优惠锦集
             self.doIndicatorTask()
         except:
