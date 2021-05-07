@@ -15,13 +15,11 @@ import random
 
 class getCCB():
     def __init__(self, cookies, shareCode):
-        self.cookies = cookies["COOKIE"]
+        self.cookies = cookies
         self.commonShareCode = ["37ff922b-ba7b-4fb0-b6f9-c28042297b75",
                                 "49675a5f-6efc-4609-8c9f-2163f2a474b1", "b9d117c6-d5b6-48a6-a2a5-164a616c0490"] + shareCode['common']
         self.motherDayShareCode = shareCode['motherDay']
-        self.xsrfToken = re.findall(
-            r"XSRF-TOKEN=(.+?);", self.cookies)[0].replace('%3D', '=')
-        self.csrfToken = cookies['X-CSRF-TOKEN']
+        self.xsrfToken = self.cookies['XSRF-TOKEN'].replace('%3D', '=')
         self.currentTime = int(time.time())
 
     def getApi(self, functionId, activityId='lPYNjdmN', prefix='jxjkhd', params=()):
@@ -33,12 +31,11 @@ class getCCB():
         headers = {
             'authority': '{}.kerlala.com'.format(prefix),
             'user-agent': 'Mozilla/5.0 (Linux; Android 11; Redmi K30 5G Build/RKQ1.200826.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045613 Mobile Safari/537.36 MMWEBID/6824 micromessenger/8.0.1.1841(0x28000151) Process/tools WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64',
-            'referer': 'https://{}.kerlala.com/a/91/lPYNjdmN/fdtopic_v1/index'.format(prefix),
-            'cookie': self.cookies
+            'referer': 'https://{}.kerlala.com/a/91/lPYNjdmN/fdtopic_v1/index'.format(prefix)
         }
         try:
             r = requests.get(url, headers=headers,
-                             params=params)
+                             params=params, cookies=self.cookies)
             if re.findall('DOCTYPE', r.text):
                 return r.text
             else:
@@ -58,16 +55,20 @@ class getCCB():
         headers = {
             'authority': '{}.kerlala.com'.format(prefix),
             'x-xsrf-token': self.xsrfToken,
-            'x-csrf-token': self.csrfToken,
             'user-agent': 'Mozilla/5.0 (Linux; Android 11; Redmi K30 5G Build/RKQ1.200826.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/77.0.3865.120 MQQBrowser/6.2 TBS/045613 Mobile Safari/537.36 MMWEBID/6824 micromessenger/8.0.1.1841(0x28000151) Process/tools WeChat/arm64 Weixin NetType/WIFI Language/zh_CN ABI/arm64',
             'origin': 'https://{}.kerlala.com'.format(prefix),
             'referer': 'https://{}.kerlala.com/a/91/{}/index'.format(prefix, activityId),
-            'content-type': 'application/json;charset=UTF-8',
-            'cookie': self.cookies
+            'content-type': 'application/json;charset=UTF-8'
         }
+
+        if(hasattr(self, 'csrfToken')):
+            headers['x-csrf-token'] = self.csrfToken
+        if(hasattr(self, 'authorization')):
+            headers['authorization'] = 'Bearer {}'.format(self.authorization)
+
         try:
             r = requests.post(url, headers=headers,
-                              data=data)
+                              data=data, cookies=self.cookies)
             if re.findall('DOCTYPE', r.text):
                 print('Cookie已失效，请更新Cookie')
                 return False
@@ -198,7 +199,7 @@ class getCCB():
         if self.currentTime < activityInfo['data']['end_time']:
             # 访问首页，获得三次抽奖机会
             self.getApi('a', 'dmRe4rPD/parallelsessions_v1/index',
-                        (('CCB_Chnl', '6000213'),))
+                        params=(('CCB_Chnl', '6000213'),))
             # 获取任务列表
             taskList = self.getApi(
                 'activity/parallelsessions/getIndicatorList', 'dmRe4rPD')
@@ -344,7 +345,7 @@ class getCCB():
                     'activity/mumbit/updatePhrase', data, 'jmX08Ymd')
                 print('初始化活动结果：'.format(updatePhraseResult['message']))
             userLaunchInfo = self.getApi(
-                'activity/mumbit/getUserLaunchInfo', 'jmX08Ymd', (('share_ident', userInfo['data']['ident']),))
+                'activity/mumbit/getUserLaunchInfo', 'jmX08Ymd', params=(('share_ident', userInfo['data']['ident']),))
             if userLaunchInfo['code'] == 2101:
                 # 开启分享
                 doUserLaunchResult = self.postApi(
@@ -366,7 +367,7 @@ class getCCB():
                 print('未发现任何助力码')
             for i in range(len(self.motherDayShareCode)):
                 userLaunchInfo = self.getApi(
-                    'activity/mumbit/getUserLaunchInfo', 'jmX08Ymd', (('share_ident', self.motherDayShareCode[i]),))
+                    'activity/mumbit/getUserLaunchInfo', 'jmX08Ymd', params=(('share_ident', self.motherDayShareCode[i]),))
                 if userLaunchInfo['code'] == 2101:
                     print('该好友未开启分享')
                 else:
@@ -389,6 +390,9 @@ class getCCB():
         龙支付优惠锦集
         '''
         print('\n开始龙支付优惠锦集')
+
+        self.getAuthAndCSRFtoken()
+
         activityInfo = self.getApi(
             'Common/activity/getActivityInfo', '03ljx6mW')
         if self.currentTime < activityInfo['data']['end_time']:
@@ -413,6 +417,15 @@ class getCCB():
                     time.sleep(5)
         else:
             print('抱歉，该活动已结束')
+
+    def getAuthAndCSRFtoken(self):
+        print('\n开始龙支付优惠锦集csrf-token和authorization')
+        activity = self.getApi('a', '5Z9WxaPK/index?CCB_Chnl=6000210')
+        self.csrfToken = re.findall(
+            r"name=csrf-token content=\"(.+?)\"", activity)[0].replace('%3D', '=')
+
+        self.authorization = re.findall(
+            r"name=Authorization content=\"(.+?)\"", activity)[0].replace('%3D', '=')
 
     def main(self):
         try:
